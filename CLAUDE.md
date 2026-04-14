@@ -295,15 +295,17 @@ I ditt GitHub repo, gå till **Settings → Secrets and variables → Actions** 
 **Secret 3: GMAIL_SERVICE_ACCOUNT_JSON** (optional, för auto-send)
 - Värde: Service account JSON för Gmail (se nedan)
 
-#### 3. Gmail Integration (optional)
-För full automation av email-skickande:
+#### 3. Gmail Service Account Setup (för auto-send)
+
+**Se [SETUP_GMAIL_SERVICE_ACCOUNT.md](SETUP_GMAIL_SERVICE_ACCOUNT.md) för detaljerade steg-för-steg instruktioner.**
+
+Kort version:
 1. Gå till [Google Cloud Console](https://console.cloud.google.com/)
-2. Skapa ett projekt
-3. Enable "Gmail API"
-4. Skapa en Service Account
-5. Download JSON-nyckeln
-6. Koda den som base64 eller kopiera direkt
-7. Lägg den i GitHub Secret `GMAIL_SERVICE_ACCOUNT_JSON`
+2. Skapa projekt → Enable Gmail API
+3. Skapa Service Account → Download JSON key
+4. Lägg JSON i GitHub Secret: `GMAIL_SERVICE_ACCOUNT_JSON`
+
+Python-scriptet använder det automatiskt för auto-send.
 
 ### Körning
 

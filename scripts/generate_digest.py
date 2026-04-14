@@ -251,48 +251,61 @@ class EmailFormatter:
         return html
 
 class GmailSender:
-    """Sends email via Gmail API"""
+    """Sends email via Gmail API with Service Account"""
 
     @staticmethod
     def send_email(subject, html_body, recipient_email):
         logger.info(f"Sending email to {recipient_email}...")
 
         try:
-            # Try to use service account if available
             service_account_json = os.getenv("GMAIL_SERVICE_ACCOUNT_JSON")
 
-            if service_account_json:
-                # Parse service account JSON
-                service_account_info = json.loads(service_account_json)
-                credentials = Credentials.from_service_account_info(
-                    service_account_info,
-                    scopes=['https://www.googleapis.com/auth/gmail.send']
-                )
-                service = build('gmail', 'v1', credentials=credentials)
-            else:
-                logger.warning("No service account configured. Email sending skipped in local mode.")
-                logger.info(f"Email would be sent to: {recipient_email}")
+            if not service_account_json:
+                logger.warning("No service account configured.")
+                logger.info(f"In production, email would be sent to: {recipient_email}")
                 logger.info(f"Subject: {subject}")
-                return True
+                return False
 
-            # Create message
-            message = MIMEMultipart('alternative')
+            # Parse service account JSON
+            try:
+                service_account_info = json.loads(service_account_json)
+            except json.JSONDecodeError as e:
+                logger.error(f"✗ Invalid JSON in GMAIL_SERVICE_ACCOUNT_JSON: {e}")
+                return False
+
+            # Create credentials with gmail.send scope
+            credentials = Credentials.from_service_account_info(
+                service_account_info,
+                scopes=['https://www.googleapis.com/auth/gmail.send']
+            )
+
+            # Build Gmail service
+            service = build('gmail', 'v1', credentials=credentials)
+
+            # Create MIME message
+            message = MIMEText(html_body, 'html')
             message['to'] = recipient_email
             message['subject'] = subject
+            message['from'] = service_account_info.get('client_email', 'sender@example.com')
 
-            mime_text = MIMEText(html_body, 'html')
-            message.attach(mime_text)
-
-            # Send message
+            # Encode message
             raw_message = base64.urlsafe_b64encode(message.as_bytes()).decode()
             send_message = {'raw': raw_message}
 
-            result = service.users().messages().send(userId='me', body=send_message).execute()
-            logger.info(f"✓ Email sent successfully (Message ID: {result.get('id')})")
+            # Send via Gmail API
+            result = service.users().messages().send(
+                userId=service_account_info.get('client_email'),
+                body=send_message
+            ).execute()
+
+            logger.info(f"✓ Email sent successfully")
+            logger.info(f"  To: {recipient_email}")
+            logger.info(f"  Subject: {subject}")
+            logger.info(f"  Message ID: {result.get('id')}")
             return True
 
         except Exception as e:
-            logger.error(f"✗ Error sending email: {e}")
+            logger.error(f"✗ Error sending email: {e}", exc_info=True)
             return False
 
 def main():

@@ -66,30 +66,47 @@ Each day at 08:00 UTC:
 
 ```
 .github/workflows/
-├── brut-natur-daily.yml       # GitHub Actions workflow
+├── brut-natur-daily.yml       # GitHub Actions workflow (committed)
 scripts/
-├── generate_digest.py          # Main digest generation script
+├── generate_digest.py          # Main digest generation script (committed)
+.env.example                    # Configuration template (committed)
+.env                            # Local config (NOT committed, in .gitignore)
+.gitignore                      # Git configuration
 CLAUDE.md                        # Detailed project documentation
 README.md                        # This file
 requirements.txt                # Python dependencies
-.gitignore                       # Git configuration
 ```
 
 ## Local Development
 
 ### Run locally (for testing)
 
+**1. Copy .env template:**
 ```bash
-# Set environment variables
-export ANTHROPIC_API_KEY="your_key_here"
-export RECIPIENT_EMAIL="fia.fjelde@gmail.com"
+cp .env.example .env
+```
 
-# Install dependencies
+**2. Edit `.env` with your values:**
+```bash
+nano .env
+# Add your ANTHROPIC_API_KEY and RECIPIENT_EMAIL
+```
+
+**3. Install dependencies:**
+```bash
 pip install -r requirements.txt
+```
 
-# Run the script
+**4. Run the script:**
+```bash
 python scripts/generate_digest.py
 ```
+
+### Security Notes
+- `.env` is in `.gitignore` — never committed to Git
+- `.env.example` is a template — safe to commit
+- Never share your `.env` file or API keys
+- GitHub Actions uses GitHub Secrets instead (more secure)
 
 ## Customization
 

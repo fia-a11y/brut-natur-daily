@@ -224,16 +224,54 @@ CronCreate-promten innehåller:
 
 ---
 
+## Lokal Testning
+
+### Setup för lokal utveckling
+
+1. **Kopiera template-filen:**
+   ```bash
+   cp .env.example .env
+   ```
+
+2. **Redigera `.env` med dina värden:**
+   ```bash
+   ANTHROPIC_API_KEY=sk-ant-xxxxx
+   RECIPIENT_EMAIL=fia.fjelde@gmail.com
+   ```
+
+3. **Installera dependencies:**
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+4. **Kör scriptet lokalt:**
+   ```bash
+   python scripts/generate_digest.py
+   ```
+
+### Säkerhet
+
+- ✓ `.env` är i `.gitignore` — aldrig committerad
+- ✓ `.env.example` är en template — säker att commita
+- ✓ GitHub Actions använder GitHub Secrets — ännu säkrare
+- ✗ **Dela ALDRIG `.env` eller API-nycklar**
+
+---
+
 ## GitHub Actions Setup
 
 ### Fil-struktur
 ```
 .github/workflows/
-├── brut-natur-daily.yml      # Workflow definition
+├── brut-natur-daily.yml      # Workflow definition (committerad)
 scripts/
-├── generate_digest.py         # Main digest generation script
-requirements.txt              # Python dependencies
-CLAUDE.md                      # This file
+├── generate_digest.py         # Main digest generation script (committerad)
+.env.example                   # Template för lokal setup (committerad)
+.env                           # Din lokala config (INTE committerad, i .gitignore)
+.gitignore                     # Git configuration
+requirements.txt              # Python dependencies (committerad)
+CLAUDE.md                      # This file (committerad)
+README.md                      # Setup guide (committerad)
 ```
 
 ### Installation & Setup

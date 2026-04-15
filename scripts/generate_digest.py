@@ -167,7 +167,7 @@ RETURNERA ENDAST JSON - INGEN ANNAN TEXT!"""
         try:
             response = self.client.messages.create(
                 model="claude-sonnet-4-6",
-                max_tokens=4000,
+                max_tokens=8000,
                 messages=[
                     {"role": "user", "content": prompt}
                 ]
@@ -181,18 +181,32 @@ RETURNERA ENDAST JSON - INGEN ANNAN TEXT!"""
                 return digest_data
             except json.JSONDecodeError as e:
                 logger.warning(f"Could not parse Claude response as JSON: {str(e)[:100]}")
-                logger.warning(f"Response started with: {content[:200]}")
-                # Try to extract JSON from response if wrapped in text
+                logger.debug(f"Response started with: {content[:300]}")
+
+                # Try to extract JSON from markdown code blocks
                 json_start = content.find('{')
                 json_end = content.rfind('}') + 1
+
                 if json_start >= 0 and json_end > json_start:
                     try:
-                        digest_data = json.loads(content[json_start:json_end])
-                        logger.info("✓ Extracted JSON from response")
+                        extracted = content[json_start:json_end]
+                        # Remove trailing markdown backticks if present
+                        if extracted.endswith('```'):
+                            extracted = extracted[:-3].rstrip()
+
+                        digest_data = json.loads(extracted)
+                        article_count = len(digest_data.get('articles', []))
+                        logger.info(f"✓ Extracted JSON from response - {article_count} articles found")
                         return digest_data
-                    except:
-                        pass
-                return {"raw_content": content, "date": datetime.now().strftime("%Y-%m-%d")}
+                    except Exception as extract_err:
+                        logger.error(f"Failed to extract JSON: {extract_err}")
+                        # Save to file for debugging
+                        if 'extracted' in locals():
+                            with open('debug_response.json', 'w') as f:
+                                f.write(extracted)
+                            logger.error(f"Saved failed JSON to debug_response.json")
+
+                return {"raw_content": content, "date": datetime.now().strftime("%Y-%m-%d"), "articles": []}
 
         except Exception as e:
             logger.error(f"Error generating digest: {e}")

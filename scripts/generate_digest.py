@@ -23,6 +23,10 @@ from googleapiclient.errors import HttpError
 import base64
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 # Setup logging
 log_dir = Path("logs")
@@ -110,7 +114,8 @@ class DigestGenerator:
     """Generates digest using Claude API"""
 
     def __init__(self):
-        self.client = Anthropic()
+        api_key = os.getenv("ANTHROPIC_API_KEY")
+        self.client = Anthropic(api_key=api_key)
 
     def generate_digest(self, articles):
         logger.info("Generating digest with Claude...")

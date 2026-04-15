@@ -127,34 +127,46 @@ class DigestGenerator:
 
         prompt = f"""Du är en nyhetsagent för Brut Natur, svenska designade fritidshus av högsta klass.
 
-Kuratera följande arkitektur- och designnyheter och skapa en professionell, varm news digest på svenska.
+Kuratera följande arkitektur- och designnyheter och skapa en professionell news digest på svenska.
 
 NYHETER:
 {articles_text}
 
-Instruktioner:
-1. Välj max 10 mest relevanta artiklar för Brut Natur
-2. Fokus: arkitektur, design, nordiska fritidshus, trender
-3. Filtrera bort: budget, politik, infrastruktur, infrastruktur
-4. Per artikel: titel, källa, datum, länk, kort sammanfattning (3 meningar), relevans för Brut Natur
-5. Inkludera 5-6 industritrendspaningar
-6. Skriv på svenska, professionell ton, inga utropstecken
-7. Returnera som JSON med struktur:
+INSTRUKTIONER:
+1. Välj max 10 mest relevanta artiklar för Brut Natur (arkitektur, design, nordiska fritidshus)
+2. Per artikel: titel, källa, datum, länk, kort sammanfattning (2-3 meningar), relevans
+3. Inkludera 5-6 industritrendspaningar
+4. Skriv på svenska, professionell ton
+5. KRITISKT: Returnera ENBART giltig JSON, ingen annan text före eller efter!
+
+JSON FORMAT (följ exakt):
 {{
-    "date": "YYYY-MM-DD",
+    "date": "2026-04-15",
+    "overview": "En kort övergripande beskrivning av veckans nyhetsfokus",
     "articles": [
-        {{"title": "", "source": "", "url": "", "summary": "", "relevance": "", "category": ""}}
+        {{
+            "title": "Artikelrubrik",
+            "source": "Källa",
+            "url": "https://example.com",
+            "summary": "2-3 meningar sammanfattning",
+            "relevance": "Varför detta är viktigt för Brut Natur"
+        }}
     ],
     "trends": [
-        {{"title": "", "description": "", "relevance_for_brut_natur": ""}}
-    ],
-    "overview": ""
-}}"""
+        {{
+            "title": "TRENDNAMN",
+            "description": "Beskrivning av trenden",
+            "relevance_for_brut_natur": "Konkret relevans"
+        }}
+    ]
+}}
+
+RETURNERA ENDAST JSON - INGEN ANNAN TEXT!"""
 
         try:
             response = self.client.messages.create(
-                model="claude-opus-4-6",
-                max_tokens=2000,
+                model="claude-sonnet-4-6",
+                max_tokens=4000,
                 messages=[
                     {"role": "user", "content": prompt}
                 ]
@@ -166,8 +178,19 @@ Instruktioner:
                 digest_data = json.loads(content)
                 logger.info(f"✓ Generated digest with {len(digest_data.get('articles', []))} articles")
                 return digest_data
-            except json.JSONDecodeError:
-                logger.warning("Could not parse Claude response as JSON, returning raw content")
+            except json.JSONDecodeError as e:
+                logger.warning(f"Could not parse Claude response as JSON: {str(e)[:100]}")
+                logger.warning(f"Response started with: {content[:200]}")
+                # Try to extract JSON from response if wrapped in text
+                json_start = content.find('{')
+                json_end = content.rfind('}') + 1
+                if json_start >= 0 and json_end > json_start:
+                    try:
+                        digest_data = json.loads(content[json_start:json_end])
+                        logger.info("✓ Extracted JSON from response")
+                        return digest_data
+                    except:
+                        pass
                 return {"raw_content": content, "date": datetime.now().strftime("%Y-%m-%d")}
 
         except Exception as e:

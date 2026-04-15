@@ -149,7 +149,8 @@ JSON FORMAT (följ exakt):
             "source": "Källa",
             "url": "https://example.com",
             "summary": "2-3 meningar sammanfattning",
-            "relevance": "Varför detta är viktigt för Brut Natur"
+            "relevance": "Varför detta är viktigt för Brut Natur",
+            "linkedin_draft": "LinkedIn-post på ~1200 tecken, svenska, professionell ton, INGEN utropstecken"
         }}
     ],
     "trends": [
@@ -241,6 +242,14 @@ class EmailFormatter:
 
         # Add articles
         for article in digest_data.get('articles', []):
+            linkedin_draft = article.get('linkedin_draft', '')
+            linkedin_section = f"""
+    <p style="background-color: #ede9e3; padding: 15px; margin-top: 15px; font-style: italic; font-size: 12px;">
+        <strong>LinkedIn-draft:</strong><br>
+        {linkedin_draft}
+    </p>
+""" if linkedin_draft else ""
+
             html += f"""
 <div class="article">
     <h2>{article.get('title', 'Untitled')}</h2>
@@ -249,6 +258,7 @@ class EmailFormatter:
         <p>{article.get('summary', '')}</p>
     </div>
     <p><strong>Relevans för Brut Natur:</strong> {article.get('relevance', '')}</p>
+    {linkedin_section}
     <p><a href="{article.get('url', '#')}">Läs artikel →</a></p>
 </div>
 """

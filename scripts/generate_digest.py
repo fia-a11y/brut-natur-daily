@@ -256,50 +256,61 @@ class EmailFormatter:
         return html
 
 class GmailSender:
-    """Sends email via Gmail API with Service Account"""
+    """Sends email via Gmail API with OAuth2"""
 
     @staticmethod
     def send_email(subject, html_body, recipient_email):
         logger.info(f"Sending email to {recipient_email}...")
 
         try:
-            service_account_json = os.getenv("GMAIL_SERVICE_ACCOUNT_JSON")
+            # Check for OAuth2 credentials file
+            creds = None
+            token_path = Path('token.json')
 
-            if not service_account_json:
-                logger.warning("No service account configured.")
-                logger.info(f"In production, email would be sent to: {recipient_email}")
-                logger.info(f"Subject: {subject}")
-                return False
+            # Load existing token if it exists
+            if token_path.exists():
+                creds = UserCredentials.from_authorized_user_file(token_path, scopes=['https://www.googleapis.com/auth/gmail.send'])
 
-            # Parse service account JSON
-            try:
-                service_account_info = json.loads(service_account_json)
-            except json.JSONDecodeError as e:
-                logger.error(f"✗ Invalid JSON in GMAIL_SERVICE_ACCOUNT_JSON: {e}")
-                return False
+            # If no valid credentials, do OAuth2 flow
+            if not creds or not creds.valid:
+                if creds and creds.expired and creds.refresh_token:
+                    creds.refresh(Request())
+                else:
+                    # Need to get credentials from Google Cloud
+                    logger.warning("⚠️  First time setup: Opening browser for Google authentication...")
+                    logger.warning("Please log in with your Google account and grant permission to send emails.")
 
-            # Create credentials with gmail.send scope
-            credentials = Credentials.from_service_account_info(
-                service_account_info,
-                scopes=['https://www.googleapis.com/auth/gmail.send']
-            )
+                    # Try to load credentials.json from Google Cloud Console
+                    if not Path('credentials.json').exists():
+                        logger.error("✗ credentials.json not found. Please download from Google Cloud Console.")
+                        logger.info("In production, email would be sent to: {recipient_email}")
+                        return False
+
+                    flow = InstalledAppFlow.from_client_secrets_file(
+                        'credentials.json',
+                        scopes=['https://www.googleapis.com/auth/gmail.send']
+                    )
+                    creds = flow.run_local_server(port=0)
+
+                # Save token for next time
+                with open('token.json', 'w') as token:
+                    token.write(creds.to_json())
 
             # Build Gmail service
-            service = build('gmail', 'v1', credentials=credentials)
+            service = build('gmail', 'v1', credentials=creds)
 
             # Create MIME message
             message = MIMEText(html_body, 'html')
             message['to'] = recipient_email
             message['subject'] = subject
-            message['from'] = service_account_info.get('client_email', 'sender@example.com')
 
             # Encode message
             raw_message = base64.urlsafe_b64encode(message.as_bytes()).decode()
             send_message = {'raw': raw_message}
 
-            # Send via Gmail API
+            # Send via Gmail API (from authenticated user's account)
             result = service.users().messages().send(
-                userId=service_account_info.get('client_email'),
+                userId='me',
                 body=send_message
             ).execute()
 

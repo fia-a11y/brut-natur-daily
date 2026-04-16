@@ -2,8 +2,8 @@ name: Brut Natur Daily Digest
 
 on:
   schedule:
-    # Runs every day at 08:00 UTC (adjust timezone as needed)
-    - cron: '0 8 * * *'
+    # Runs every Monday at 08:00 UTC
+    - cron: '0 8 * * 1'
   workflow_dispatch:  # Allow manual trigger
 
 jobs:

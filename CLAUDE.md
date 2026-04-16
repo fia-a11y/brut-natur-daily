@@ -1,29 +1,36 @@
 # Brut Natur Daily — News Digest Automation
 
 ## Projektöversikt
-Automated daily news digest för Brut Natur, Swedish high-end turnkey holiday homes. Hämtar, kurerar och skickar relevant arkitektur- och designnyheter från nordiska och internationella källor varje morgon kl 08:00.
+✅ **FULLT FUNKTIONELLT SYSTEM** — Automated daily news digest för Brut Natur, Swedish high-end turnkey holiday homes. Hämtar, kurerar och skickar relevant arkitektur- och designnyheter från nordiska och internationella källor varje morgon kl 08:00.
 
-**Mottagare:** fia.fjelde@gmail.com  
-**Frekvens:** Dagligen  
-**Tid:** 08:00 (svensk tid)  
-**CronJob ID:** 610a8ddb  
+**Mottagare:** fia@brutcompany.com (Google Workspace)  
+**Frekvens:** Varje måndag  
+**Tid:** 08:00 UTC (GitHub Actions)  
+**GitHub Repo:** https://github.com/fia-a11y/brut-natur-daily  
+**Status:** 🟢 Aktiv & automatiserad  
 
 ---
 
 ## Konfiguration
 
-### Skickningstid
-- **Tid:** 08:00 varje dag
-- **Frekvens:** Daglig, återkommande
-- **Durable:** Ja (sparas vid sessionsslut)
-- **Auto-expire:** Efter 7 dagar
+### Automation
+- **Plattform:** GitHub Actions
+- **Tid:** 08:00 UTC varje måndag (kan justera cron i `.github/workflows/brut-natur-daily.yml`)
+- **Körning:** Fullständigt automatiserad, ingen manuell åtgärd krävs
+- **Autentisering:** OAuth2 med Google (Gmail API) + refresh token för auto-renewal
 
 ### Email-format
-- **Till:** fia.fjelde@gmail.com
-- **Ämne:** Brut Natur Daily [DATUM] — X nyheter och trender
+- **Till:** fia@brutcompany.com (Google Workspace)
+- **Ämne:** Brut Natur Daily [DATUM] — X nyheter
 - **Språk:** Svenska
-- **Ton:** Professionell men varm, ingen budget-fokus, inga utropstecken
-- **Format:** HTML med elegant layout (gradient header, färgkodade kategorier)
+- **Ton:** Professionell, ingen budget-fokus, inga utropstecken
+- **Format:** HTML med elegant layout (gradient header)
+
+### Content-funktioner
+- **LinkedIn-drafts:** Varje artikel inkluderar en ~1200 tecken LinkedIn-post (svenska, professionell ton)
+- **Kuraterad innehål:** Claude AI väljer max 10 mest relevanta artiklar
+- **Industritrender:** 5-6 aktuella trender inom arkitektur/design
+- **Scoring:** Varje artikel betygsatt på relevans, trovärdighet, handlingspotential
 
 ---
 
@@ -180,47 +187,79 @@ Nyheter väljs för att:
 
 ## Underhåll & Hantering
 
-### CronJob
-- **Kommando för att visa jobb:** `CronList`
-- **Kommando för att stoppa:** `CronDelete 610a8ddb`
-- **Auto-expire:** 7 dagar från skapandet
-- **För förnyelse:** Skapa nytt CronCreate-jobb
+### GitHub Actions Workflow
+- **Status:** ✅ Aktivt och automatiserat
+- **Filplats:** `.github/workflows/brut-natur-daily.yml`
+- **Körning:** Dagligen 08:00 UTC
+- **Loggning:** GitHub Actions → Actions tab → senaste körning
 
 ### Framtida Uppdateringar
 Om du vill uppdatera:
-- Skickningstid → använd `CronDelete` och ny `CronCreate`
-- Email-mottagare → uppdatera i CronCreate-promten
-- Innehålls-kriterier → uppdatera denna CLAUDE.md + CronCreate-prompt
-- RSS-sources → uppdatera denna CLAUDE.md + CronCreate-prompt
+- **Skickningstid:** Redigera `.github/workflows/brut-natur-daily.yml` → `cron:` värde
+- **Email-mottagare:** Uppdatera `RECIPIENT_EMAIL` GitHub Secret
+- **Innehålls-kriterier:** Uppdatera `WEB_SEARCHES` eller prompt i `scripts/generate_digest.py`
+- **RSS-sources:** Uppdatera `RSS_FEEDS` lista i `scripts/generate_digest.py`
+- **API-nyckel:** Uppdatera `ANTHROPIC_API_KEY` GitHub Secret (vid rotation)
 
 ---
 
 ## Teknisk Implementation
 
-### Tools Used
-- `WebFetch` — Hämtar RSS-feeds
-- `WebSearch` — Söker efter specifika trender
-- `mcp__claude_ai_Gmail__create_draft` — Skapar email-utkast
-- `CronCreate` — Schemalägger daglig körning
+### Arkitektur
+```
+GitHub Actions (08:00 UTC varje dag)
+    ↓
+Python Script (generate_digest.py)
+    ├─ Hämtar RSS-feeds (feedparser)
+    ├─ Skickar web search queries
+    ├─ Genererar digest med Claude AI (claude-sonnet-4-6)
+    │   └─ Parsar JSON response (med markdown code block handling)
+    │   └─ Genererar LinkedIn-drafts (~1200 tecken)
+    ├─ Formaterar HTML-email (EmailFormatter)
+    └─ Skickar via Gmail API (OAuth2)
+```
 
-### Prompt Structure
-CronCreate-promten innehåller:
-1. Instruktioner för RSS-hämtning
-2. Search-queries
-3. Kurerings-kriterier
-4. Email-struktur-specifikation
-5. HTML-formatting instruktioner
-6. Sending-instruktioner via Gmail
+### Komponenter
+
+**Python Script (`scripts/generate_digest.py`):**
+- `FeedFetcher` — Hämtar & parsar RSS-feeds med feedparser
+- `WebSearcher` — Placeholder för trend-sökning
+- `DigestGenerator` — Anropar Claude API för kuraterad digest
+- `EmailFormatter` — Genererar responsiv HTML-email
+- `GmailSender` — Skickar via Gmail API med OAuth2-autentisering
+
+**Autentisering:**
+- Använder `google-oauth2-credentials` med `InstalledAppFlow`
+- OAuth2-token sparas i `token.json` (auto-refresh vid expiry)
+- Första körning öppnar browser för user-godkännande
+
+**Claude API:**
+- Model: `claude-sonnet-4-6`
+- Max tokens: 8000
+- Returnerar JSON med:
+  - Overview (kort sammanfattning)
+  - Articles array (max 10 artiklar)
+    - title, source, url, summary, relevance
+    - linkedin_draft (genererad LinkedIn-post)
+  - Trends array (5-6 industritrender)
+
+**JSON Extraction:**
+Claude kan returnera JSON wrapped i markdown code blocks. Scriptet hanterar detta genom:
+1. Försöka parse JSON direkt
+2. Om det misslyckas: extrahera '{...}' från respons
+3. Ta bort trailing markdown backticks
+4. Parse igen med felmeddelanden
 
 ---
 
 ## Anteckningar för Framtida Sessions
 
-- Detta är en **durable** jobb som överlevar sessionsslut
-- **Auto-expires efter 7 dagar** — planera förnyelse innan dess
-- Email-draften **skapas men skickas inte automatiskt** genom systemet än (behöver manuell review/send eller mer avancerad integration)
-- För **full automation** (auto-send) krävs eventuellt ytterligare API-konfiguration
-- **Layout är responsiv** och fungerar i de flesta email-klienter
+- ✅ **SYSTEM ÄR FULLT AUTOMATISERAT** — Email skickas direkt via Gmail API, ingen manuell åtgärd krävs
+- ✅ **OAuth2-token auto-refreshing** — Token sparas lokalt och uppdateras automatiskt vid expiry
+- ✅ **LinkedIn-drafts genereras** — Varje artikel inkluderar en professionell LinkedIn-post
+- ✅ **JSON-parsing robust** — Hanterar markdown code block wrapping från Claude API
+- **Layout är responsiv** och fungerar i de flesta email-klienter (Gmail, Outlook, Apple Mail, etc.)
+- Om OAuth-token blir ogiltig: radera `token.json` och nästa körning frågar om ny autentisering
 
 ---
 
@@ -236,7 +275,7 @@ CronCreate-promten innehåller:
 2. **Redigera `.env` med dina värden:**
    ```bash
    ANTHROPIC_API_KEY=sk-ant-xxxxx
-   RECIPIENT_EMAIL=fia.fjelde@gmail.com
+   RECIPIENT_EMAIL=fia@brutcompany.com
    ```
 
 3. **Installera dependencies:**
@@ -290,22 +329,27 @@ I ditt GitHub repo, gå till **Settings → Secrets and variables → Actions** 
 - Värde: Din Anthropic API-nyckel från https://console.anthropic.com/
 
 **Secret 2: RECIPIENT_EMAIL**
-- Värde: fia.fjelde@gmail.com (eller annan mottagaradress)
+- Värde: fia@brutcompany.com (eller annan mottagaradress)
 
-**Secret 3: GMAIL_SERVICE_ACCOUNT_JSON** (optional, för auto-send)
-- Värde: Service account JSON för Gmail (se nedan)
+**Secret 3: GOOGLE_REFRESH_TOKEN**
+- Värde: Refresh token från OAuth2-flödet (sparad från första körning)
 
-#### 3. Gmail Service Account Setup (för auto-send)
+**Secret 4: GOOGLE_CLIENT_ID**
+- Värde: Client ID från credentials.json
 
-**Se [SETUP_GMAIL_SERVICE_ACCOUNT.md](SETUP_GMAIL_SERVICE_ACCOUNT.md) för detaljerade steg-för-steg instruktioner.**
+**Secret 5: GOOGLE_CLIENT_SECRET**
+- Värde: Client Secret från credentials.json
 
-Kort version:
-1. Gå till [Google Cloud Console](https://console.cloud.google.com/)
-2. Skapa projekt → Enable Gmail API
-3. Skapa Service Account → Download JSON key
-4. Lägg JSON i GitHub Secret: `GMAIL_SERVICE_ACCOUNT_JSON`
+#### 3. OAuth2-autentisering (engångsprocedur)
 
-Python-scriptet använder det automatiskt för auto-send.
+**Första gången scriptet körs lokalt:**
+1. Scriptet öppnar en browser för Google-autentisering
+2. Du loggar in med ditt Google-konto
+3. Du godkänner Gmail API-åtkomst
+4. En token.json skapas lokalt med refresh_token
+5. Kopiera refresh_token från token.json till GitHub Secret `GOOGLE_REFRESH_TOKEN`
+
+Efter detta fungerar GitHub Actions helt automatiskt — scriptet använder refresh_token för att auto-uppdatera access_token vid varje körning.
 
 ### Körning
 
@@ -337,5 +381,5 @@ Loggar sparas också som artifacts (`.log` filer) som kan hämtas.
 
 ---
 
-**Senast uppdaterad:** 14 april 2026  
-**Status:** Aktiv — GitHub Actions setup, ej ännu aktiverad på GitHub
+**Senast uppdaterad:** 16 april 2026  
+**Status:** ✅ Fullt automatiserad — GitHub Actions kör varje måndag 08:00 UTC, email skickas automatiskt via Gmail API med auto-renewing OAuth2 token

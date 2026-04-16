@@ -310,34 +310,49 @@ class GmailSender:
         logger.info(f"Sending email to {recipient_email}...")
 
         try:
-            # Check for OAuth2 credentials file
             creds = None
             token_path = Path('token.json')
 
-            # Load existing token if it exists
-            if token_path.exists():
+            # First, check if we have a refresh token from environment (GitHub Actions)
+            refresh_token = os.getenv("GOOGLE_REFRESH_TOKEN")
+
+            if refresh_token:
+                # Use refresh token to create credentials (for GitHub Actions)
+                logger.info("Using refresh token from environment...")
+                creds = UserCredentials(
+                    token=None,
+                    refresh_token=refresh_token,
+                    token_uri='https://oauth2.googleapis.com/token',
+                    client_id=os.getenv("GOOGLE_CLIENT_ID"),
+                    client_secret=os.getenv("GOOGLE_CLIENT_SECRET"),
+                    scopes=['https://www.googleapis.com/auth/gmail.send']
+                )
+                creds.refresh(Request())
+                logger.info("✓ Token refreshed from refresh_token")
+
+            # Fallback: Load existing token from file (local development)
+            elif token_path.exists():
                 creds = UserCredentials.from_authorized_user_file(token_path, scopes=['https://www.googleapis.com/auth/gmail.send'])
-
-            # If no valid credentials, do OAuth2 flow
-            if not creds or not creds.valid:
                 if creds and creds.expired and creds.refresh_token:
+                    logger.info("Refreshing expired token...")
                     creds.refresh(Request())
-                else:
-                    # Need to get credentials from Google Cloud
-                    logger.warning("⚠️  First time setup: Opening browser for Google authentication...")
-                    logger.warning("Please log in with your Google account and grant permission to send emails.")
 
-                    # Try to load credentials.json from Google Cloud Console
-                    if not Path('credentials.json').exists():
-                        logger.error("✗ credentials.json not found. Please download from Google Cloud Console.")
-                        logger.info("In production, email would be sent to: {recipient_email}")
-                        return False
+            # If still no valid credentials, do OAuth2 flow (first-time local setup)
+            if not creds or not creds.valid:
+                logger.warning("⚠️  First time setup: Opening browser for Google authentication...")
+                logger.warning("Please log in with your Google account and grant permission to send emails.")
 
-                    flow = InstalledAppFlow.from_client_secrets_file(
-                        'credentials.json',
-                        scopes=['https://www.googleapis.com/auth/gmail.send']
-                    )
-                    creds = flow.run_local_server(port=0)
+                # Try to load credentials.json from Google Cloud Console
+                if not Path('credentials.json').exists():
+                    logger.error("✗ credentials.json not found. Please download from Google Cloud Console.")
+                    logger.info(f"In production, email would be sent to: {recipient_email}")
+                    return False
+
+                flow = InstalledAppFlow.from_client_secrets_file(
+                    'credentials.json',
+                    scopes=['https://www.googleapis.com/auth/gmail.send']
+                )
+                creds = flow.run_local_server(port=0)
 
                 # Save token for next time
                 with open('token.json', 'w') as token:

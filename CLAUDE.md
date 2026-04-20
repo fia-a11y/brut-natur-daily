@@ -39,19 +39,27 @@
 ### RSS-Feeds
 1. **Arkitekten.se** — https://arkitekten.se/feed/
    - Focus: Nordisk arkitektur, design, bygglov
-   - Filter: Senaste 7 dagar
+   - Artiklar per vecka: 5
 
 2. **Residence Magazine** — https://www.residencemagazine.se/rss/
    - Focus: Nordiska fritidshus, design, renovering
-   - Filter: Senaste 7 dagar
+   - Artiklar per vecka: **1** (limited)
 
 3. **ArchDaily** — http://feeds.feedburner.com/Archdaily
    - Focus: Internationell arkitektur, featured projects
-   - Filter: Senaste trender, global relevans
+   - Artiklar per vecka: 5
 
 4. **Designboom** — https://www.designboom.com/feed/
    - Focus: Design trends, installations, exhibitions
-   - Filter: Senaste 7 dagar
+   - Artiklar per vecka: 5
+
+5. **Rum** — https://etidning.tidskriftenrum.se/
+   - Focus: Svensk arkitektur, inredning, designkultur
+   - Artiklar per vecka: 5
+
+6. **Vogue Living** — https://www.vogue.com/living/homes
+   - Focus: Globala hem, interiördesign, arkitektur
+   - Artiklar per vecka: 5
 
 ### Web Searches
 - Nordic cabin architecture 2026

@@ -46,9 +46,11 @@ logger = logging.getLogger(__name__)
 # Configuration
 RSS_FEEDS = [
     "https://arkitekten.se/feed/",
-    "https://www.residencemagazine.se/rss/",
+    ("https://www.residencemagazine.se/rss/", 1),  # Limit to 1 article
     "http://feeds.feedburner.com/Archdaily",
-    "https://www.designboom.com/feed/"
+    "https://www.designboom.com/feed/",
+    "https://etidning.tidskriftenrum.se/",
+    "https://www.vogue.com/living/homes"
 ]
 
 WEB_SEARCHES = [
@@ -69,10 +71,18 @@ class FeedFetcher:
         logger.info(f"Fetching {len(feeds_list)} RSS feeds...")
         articles = []
 
-        for feed_url in feeds_list:
+        for feed_item in feeds_list:
+            # Handle both string URLs and (url, limit) tuples
+            if isinstance(feed_item, tuple):
+                feed_url, limit = feed_item
+            else:
+                feed_url = feed_item
+                limit = 5
+
             try:
                 feed = feedparser.parse(feed_url)
-                for entry in feed.entries[:5]:  # Get latest 5 from each feed
+                entries = feed.entries[:limit]
+                for entry in entries:
                     article = {
                         'title': entry.get('title', 'Untitled'),
                         'url': entry.get('link', ''),
@@ -81,7 +91,7 @@ class FeedFetcher:
                         'source': feed.feed.get('title', 'Unknown Source')
                     }
                     articles.append(article)
-                logger.info(f"✓ Fetched {len(feed.entries[:5])} articles from {feed_url}")
+                logger.info(f"✓ Fetched {len(entries)} articles from {feed_url}")
             except Exception as e:
                 logger.warning(f"✗ Error fetching {feed_url}: {e}")
 

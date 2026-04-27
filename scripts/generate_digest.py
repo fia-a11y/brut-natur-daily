@@ -61,7 +61,7 @@ WEB_SEARCHES = [
     "Dezeen ArchDaily hetaste projekt"
 ]
 
-RECIPIENT_EMAIL = os.getenv("RECIPIENT_EMAIL", "fia.fjelde@gmail.com")
+RECIPIENT_EMAILS = os.getenv("RECIPIENT_EMAILS", "fia@brutcompany.com").split(",")
 
 class FeedFetcher:
     """Fetches and parses RSS feeds"""
@@ -418,12 +418,14 @@ def main():
         formatter = EmailFormatter()
         html_body = formatter.format_html(digest_data)
 
-        # Send email
+        # Send email to all recipients
         article_count = len(digest_data.get('articles', []))
         subject = f"Brut Natur Daily {digest_data.get('date', datetime.now().strftime('%Y-%m-%d'))} — {article_count} nyheter"
 
         sender = GmailSender()
-        sender.send_email(subject, html_body, RECIPIENT_EMAIL)
+        for recipient in RECIPIENT_EMAILS:
+            recipient = recipient.strip()  # Remove whitespace
+            sender.send_email(subject, html_body, recipient)
 
         logger.info("=" * 60)
         logger.info("✓ Digest generation completed successfully")

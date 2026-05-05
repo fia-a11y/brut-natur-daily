@@ -1,7 +1,7 @@
-# Brut Natur Daily — News Digest Automation
+# Brut Natur Weekly Digest — News Digest Automation
 
 ## Projektöversikt
-✅ **FULLT FUNKTIONELLT SYSTEM** — Automated daily news digest för Brut Natur, Swedish high-end turnkey holiday homes. Hämtar, kurerar och skickar relevant arkitektur- och designnyheter från nordiska och internationella källor varje morgon kl 08:00.
+✅ **FULLT FUNKTIONELLT SYSTEM** — Automated weekly news digest för Brut Natur, Swedish high-end turnkey holiday homes. Hämtar, kurerar och skickar relevant arkitektur- och designnyheter från nordiska och internationella källor varje måndag kl 08:00.
 
 **Mottagare:** fia@brutcompany.com (Google Workspace)  
 **Frekvens:** Varje måndag  
@@ -20,8 +20,8 @@
 - **Autentisering:** OAuth2 med Google (Gmail API) + refresh token för auto-renewal
 
 ### Email-format
-- **Till:** fia@brutcompany.com (Google Workspace)
-- **Ämne:** Brut Natur Daily [DATUM] — X nyheter
+- **Till:** fia@brutcompany.com, stefan@brutcompany.com (Google Workspace)
+- **Ämne:** Brut Natur Weekly Digest [DATUM] — X nyheter
 - **Språk:** Svenska
 - **Ton:** Professionell, ingen budget-fokus, inga utropstecken
 - **Format:** HTML med elegant layout (gradient header)

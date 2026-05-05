@@ -254,7 +254,7 @@ class EmailFormatter:
 
 <div class="header">
     <h1>BRUT NATUR</h1>
-    <p style="margin: 10px 0 0 0; font-size: 13px; opacity: 0.9;">DAILY DIGEST</p>
+    <p style="margin: 10px 0 0 0; font-size: 13px; opacity: 0.9;">WEEKLY DIGEST</p>
     <p style="margin: 15px 0 0 0; font-size: 11px; opacity: 0.8;">{date}</p>
 </div>
 
